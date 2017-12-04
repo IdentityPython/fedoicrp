@@ -1,2 +1,2 @@
 # fedoicrp
-Package you should use when building a federation aware OIDC RP
+Examples on how to build a federation aware OIDC RP
