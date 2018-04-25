@@ -40,23 +40,29 @@ client_config = {
                            "code id_token",
                            "code id_token token", "code token"],
         "scope": ["openid", "profile", "email", "address", "phone"],
-        "token_endpoint_auth_method": ["client_secret_basic",
-                                       'client_secret_post']
+        "token_endpoint_auth_method": "client_secret_basic"
     },
     'issuer': 'https://catalogix.se',
     'federation': {
-        'signing_keys': {
-            'private_path': 'sign_keys',
-            'public_path': 'static/signing_jwks.json',
-            'keydefs': KEYDEFS
+        'signer': {
+            'ms_dir': 'sms/https%3A%2F%2Fcatalogix.se',
+            'contexts': ['registration'],
+            'signing_service': {
+                'type': 'internal',
+                'private_path': './private_mdss_keys',
+                'key_defs': KEYDEFS,
+                'public_path': './public_mdss_keys'
+            }
         },
-        'superior': {
-            'private_key_path': 'signers/catalogix_jwks.json',
-            'keydefs': KEYDEFS,
-            'id': 'https://catalogix.se',
-            'ms_dir': 'ms/https%3A%2F%2Fcatalogix.se'
+        'fo_bundle': {
+            'dir': 'fo',
+            'private_path': './fo_bundle_signing_keys',
+            'key_defs': KEYDEFS,
+            'public_path': './pub_fo_bundle_signing_keys'
         },
-        'jwks_dir': 'fo_jwks'
+        'private_path': './entity_keys',
+        'key_defs': KEYDEFS,
+        'public_path': './pub_entity_keys'
     }
 }
 
@@ -86,9 +92,6 @@ CLIENTS = {
         "allow": {
             "issuer_mismatch": True
         },
-        "userinfo_request_method": "GET"
     }
 }
 
-# Whether an attempt to fetch the userinfo should be made
-USERINFO = True

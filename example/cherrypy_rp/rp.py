@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 import importlib
-import json
 import logging
 import os
 import sys
 
 import cherrypy
-import fedoiccli
-from fedoiccli.request import factory
-from oicmsg.key_jar import build_keyjar
-from oicmsg.key_jar import KeyJar
 
-from oicrp import RPHandler
+from oidcmsg.key_jar import init_key_jar
+
+from oidcrp import oidc
+from oidcrp import RPHandler
+
+from fedoidcservice.service import factory
 
 logger = logging.getLogger("")
 LOGFILE_NAME = 'farp.log'
@@ -24,29 +24,6 @@ logger.addHandler(hdlr)
 logger.setLevel(logging.DEBUG)
 
 SIGKEY_NAME = 'sigkey.jwks'
-
-
-def get_jwks(private_path, keydefs, public_path):
-    if os.path.isfile(private_path):
-        _jwks = open(private_path, 'r').read()
-        _kj = KeyJar()
-        _kj.import_jwks(json.loads(_jwks), '')
-    else:
-        _kj = build_keyjar(keydefs)[1]
-        jwks = _kj.export_jwks(private=True)
-        head, tail = os.path.split(private_path)
-        if not os.path.isdir(head):
-            os.makedirs(head)
-        fp = open(private_path, 'w')
-        fp.write(json.dumps(jwks))
-        fp.close()
-
-    jwks = _kj.export_jwks()  # public part
-    fp = open(public_path, 'w')
-    fp.write(json.dumps(jwks))
-    fp.close()
-
-    return _kj
 
 
 if __name__ == '__main__':
@@ -101,13 +78,14 @@ if __name__ == '__main__':
     else:
         _base_url = config.BASEURL
 
-    _kj = get_jwks(config.PRIVATE_JWKS_PATH, config.KEYDEFS,
-                   config.PUBLIC_JWKS_PATH)
+    _kj = init_key_jar(private_path=config.PRIVATE_JWKS_PATH,
+                       key_defs=config.KEYDEFS,
+                       public_path=config.PUBLIC_JWKS_PATH)
 
     rph = RPHandler(base_url=_base_url, hash_seed="BabyDriver", keyjar=_kj,
                     jwks_path=config.PUBLIC_JWKS_PATH,
                     client_configs=config.CLIENTS, service_factory=factory,
-                    services=config.SERVICES, client_cls=fedoiccli.Client)
+                    services=config.SERVICES, client_cls=oidc.RP)
 
     cherrypy.tree.mount(cprp.Consumer(rph, 'html'), '/', provider_config)
 
