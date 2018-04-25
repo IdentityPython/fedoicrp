@@ -4,9 +4,9 @@ import logging
 import os
 import re
 from html import entities as htmlentitydefs
-from urllib.parse import parse_qs
 
 import cherrypy
+import requests
 from jwkest import as_bytes
 
 logger = logging.getLogger(__name__)
@@ -33,17 +33,6 @@ entity_map = {}
 
 for i in range(256):
     entity_map[chr(i)] = "&#%d;" % i
-
-
-def compact(qsdict):
-    res = {}
-    for key, val in qsdict.items():
-        if len(val) == 1:
-            res[key] = val[0]
-        else:
-            res[key] = val
-    return res
-
 
 for entity, char in htmlentitydefs.entitydefs.items():
     if char in entity_map:
@@ -126,54 +115,37 @@ class Consumer(Root):
         if iss:
             link = iss
         elif uid:
-            pass
+            try:
+                link = self.rph.find_srv_discovery_url(
+                    resource="acct:{}".format(uid))
+            except requests.ConnectionError:
+                raise cherrypy.HTTPError(
+                    message="Webfinger lookup failed, connection error")
+            else:
+                logger.info('Issuer ID: {}'.format(link))
         else:
             fname = os.path.join(self.html_home, 'opbyuid.html')
             return as_bytes(open(fname, 'r').read())
 
-        if link or uid:
-            if uid:
-                args = {'resource':uid}
-            else:
-                args = {}
+        if link:
             try:
-                result = self.rph.begin(link, **args)
+                _url = self.rph.begin(link)
             except Exception as err:
                 raise cherrypy.HTTPError(err)
             else:
-                raise cherrypy.HTTPRedirect(result['url'])
-
-    def get_rp(self, op_hash):
-        try:
-            _iss = self.rph.hash2issuer[op_hash]
-        except KeyError:
-            logger.error('Unkown issuer: {} not among {}'.format(
-                op_hash, list(self.rph.hash2issuer.keys())))
-            raise cherrypy.HTTPError(400, "Unknown hash: {}".format(op_hash))
-        else:
-            try:
-                rp = self.rph.issuer2rp[_iss]
-            except KeyError:
-                raise cherrypy.HTTPError(
-                    400, "Couldn't find client for {}".format(_iss))
-        return rp
+                raise cherrypy.HTTPRedirect(_url)
 
     @cherrypy.expose
     def acb(self, op_hash='', **kwargs):
-        logger.debug('Callback kwargs: {}'.format(kwargs))
-
-        rp = self.get_rp(op_hash)
-
         try:
-            session_info = self.rph.state_db_interface.get_state(
-                kwargs['state'])
+            rp = self.rph.issuer2rp[self.rph.hash2issuer[op_hash]]
         except KeyError:
-            raise cherrypy.HTTPError(400, 'Unknown state')
+            raise cherrypy.HTTPError(400,
+                                     "Response to something I hadn't asked for")
 
-        logger.debug('Session info: {}'.format(session_info))
-        # rp.service_context.provider_info['issuer'] != state_info['iss']:
-        #   raise cherrypy.HTTPError(400, 'Wrong Issuer')
-        res = self.rph.finalize(session_info['iss'], kwargs)
+        x = rp.client_info.state_db[kwargs['state']]
+
+        res = self.rph.phaseN(x['as'], kwargs)
 
         if res[0] is True:
             fname = os.path.join(self.html_home, 'opresult.html')
@@ -199,23 +171,37 @@ class Consumer(Root):
             elif a == 'authz_cb':
                 cherrypy.request.params['op_hash'] = b
                 return self.acb
-            elif a == 'ihf_cb':
+            elif a == 'authz_im_cb':
                 cherrypy.request.params['op_hash'] = b
-                return self.implicit_hybrid_flow
+                return self.ihcb
 
         return self
 
     @cherrypy.expose
+    def ihcb(self, **kwargs):
+        """ Implicit and hybrid callback """
+        return self._load_HTML_page_from_file("html/repost_fragment.html",
+                                              op_hash=kwargs['op_hash'])
+
+    def _load_HTML_page_from_file(self, path, **kwargs):
+        if not path.startswith("/"): # relative path
+            # prepend the root package dir
+            path = os.path.join(os.path.dirname(__file__), path)
+
+        with open(path, "r") as f:
+            txt = f.read()
+            txt = txt % kwargs['op_hash']
+            return txt
+
+    @cherrypy.expose
     def repost_fragment(self, **kwargs):
-        logger.debug('repost_fragment kwargs: {}'.format(kwargs))
-        args = compact(parse_qs(kwargs['url_fragment']))
-        op_hash = kwargs['op_hash']
+        try:
+            rp = self.rph.issuer2rp[self.rph.hash2issuer[kwargs['op_hash']]]
+        except KeyError:
+            raise cherrypy.HTTPError(400,
+                                     "Response to something I hadn't asked for")
 
-        rp = self.get_rp(op_hash)
-
-        x = rp.service_context.state_db[args['state']]
-        logger.debug('State info: {}'.format(x))
-        res = self.rph.finalize(x['as'], args)
+        res = self.rph.phaseN(rp, kwargs['url_fragment'])
 
         if res[0] is True:
             fname = os.path.join(self.html_home, 'opresult.html')
@@ -224,19 +210,3 @@ class Consumer(Root):
             return as_bytes(_html)
         else:
             raise cherrypy.HTTPError(400, res[1])
-
-    @cherrypy.expose
-    def implicit_hybrid_flow(self, op_hash='', **kwargs):
-        logger.debug('implicit_hybrid_flow kwargs: {}'.format(kwargs))
-        return self._load_HTML_page_from_file("html/repost_fragment.html",
-                                              op_hash)
-
-    def _load_HTML_page_from_file(self, path, value):
-        if not path.startswith("/"): # relative path
-            # prepend the root package dir
-            path = os.path.join(os.path.dirname(__file__), path)
-
-        with open(path, "r") as f:
-            txt = f.read()
-            txt = txt % value
-            return txt
