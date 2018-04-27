@@ -133,7 +133,7 @@ class Consumer(Root):
 
         if link or uid:
             if uid:
-                args = {'resource':uid}
+                args = {'user_id':uid}
             else:
                 args = {}
             try:

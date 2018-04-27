@@ -8,9 +8,9 @@ import cherrypy
 
 from oidcmsg.key_jar import init_key_jar
 
-from oidcrp import oidc
 from oidcrp import RPHandler
 
+from fedoidcrp import oidc
 from fedoidcservice.service import factory
 
 logger = logging.getLogger("")
@@ -82,10 +82,16 @@ if __name__ == '__main__':
                        key_defs=config.KEYDEFS,
                        public_path=config.PUBLIC_JWKS_PATH)
 
+    if args.insecure:
+        verify_ssl = False
+    else:
+        verify_ssl = True
+
     rph = RPHandler(base_url=_base_url, hash_seed="BabyDriver", keyjar=_kj,
                     jwks_path=config.PUBLIC_JWKS_PATH,
                     client_configs=config.CLIENTS, service_factory=factory,
-                    services=config.SERVICES, client_cls=oidc.RP)
+                    services=config.SERVICES, client_cls=oidc.RP,
+                    verify_ssl=verify_ssl)
 
     cherrypy.tree.mount(cprp.Consumer(rph, 'html'), '/', provider_config)
 

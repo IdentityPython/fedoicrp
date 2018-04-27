@@ -27,9 +27,9 @@ CLIENT_PREFS = {
     "token_endpoint_auth_method": ["client_secret_basic", 'client_secret_post']
 }
 
-SERVICES = ['FedProviderInfoDiscovery', 'FedRegistrationRequest',
-            'AuthorizationRequest', 'AccessTokenRequest',
-            'RefreshAccessTokenRequest', 'UserInfoRequest']
+SERVICES = {'FedProviderInfoDiscovery': {}, 'FedRegistrationRequest': {},
+            'Authorization': {}, 'AccessToken': {},
+            'RefreshAccessToken': {}, 'UserInfo': {}}
 
 client_config = {
     'client_prefs': {

@@ -26,9 +26,12 @@ CLIENT_PREFS = {
                                    'client_secret_post']
     }
 
-SERVICES = ['FedProviderInfoDiscovery', 'FedRegistrationRequest',
-            'AuthorizationRequest', 'AccessTokenRequest',
-            'RefreshAccessTokenRequest', 'UserInfoRequest']
+# Default set if nothing else is specified
+SERVICES = {
+    'FedProviderInfoDiscovery': {}, 'FedRegistrationRequest': {},
+    'Authorization': {}, 'AccessToken': {},
+    'RefreshAccessToken': {}, 'UserInfo': {}
+}
 
 client_config = {
     'client_prefs': {
@@ -61,14 +64,17 @@ client_config = {
         'private_path': './entity_keys',
         'key_defs': KEYDEFS,
         'public_path': './pub_entity_keys'
-        }
+        },
+    'services': {
+        'FedProviderInfoDiscovery': {}, 'FedRegistrationRequest': {},
+        'Authorization': {}, 'AccessToken': {}, 'WebFinger': {},
+        'RefreshAccessToken': {}, 'UserInfo': {}
     }
-
-# default
-# SERVICE_FACTORY = 'oiccli.oic.requests.factory'
+}
 
 # The keys in this dictionary are the OPs short user friendly name
 # not the issuer (iss) name.
+# The special key '' is ued for OPs that support dynamic interactions.
 
 CLIENTS = {
     # The ones that support webfinger, OP discovery and client registration
