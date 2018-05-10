@@ -27,9 +27,11 @@ CLIENT_PREFS = {
     "token_endpoint_auth_method": ["client_secret_basic", 'client_secret_post']
 }
 
-SERVICES = {'FedProviderInfoDiscovery': {}, 'FedRegistrationRequest': {},
-            'Authorization': {}, 'AccessToken': {},
-            'RefreshAccessToken': {}, 'UserInfo': {}}
+SERVICES = {
+    'FedProviderInfoDiscovery': {}, 'FedRegistrationRequestOOB': {},
+    'Authorization': {}, 'AccessToken': {},
+    'RefreshAccessToken': {}, 'UserInfo': {}
+}
 
 client_config = {
     'client_prefs': {
@@ -44,25 +46,19 @@ client_config = {
     },
     'issuer': 'https://catalogix.se',
     'federation': {
-        'signer': {
-            'ms_dir': 'sms/https%3A%2F%2Fcatalogix.se',
-            'contexts': ['registration'],
-            'signing_service': {
-                'type': 'internal',
-                'private_path': './private_mdss_keys',
-                'key_defs': KEYDEFS,
-                'public_path': './public_mdss_keys'
-            }
-        },
         'fo_bundle': {
             'dir': 'fo',
             'private_path': './fo_bundle_signing_keys',
             'key_defs': KEYDEFS,
             'public_path': './pub_fo_bundle_signing_keys'
         },
-        'private_path': './entity_keys',
-        'key_defs': KEYDEFS,
-        'public_path': './pub_entity_keys'
+        'self_signer': {
+            'private_path': './entity_keys',
+            'key_defs': KEYDEFS,
+            'public_path': './pub_entity_keys',
+        },
+        'sms_dir': 'sms/https%3A%2F%2Fcatalogix.se',
+        'contexts': ['registration']
     }
 }
 
@@ -94,4 +90,3 @@ CLIENTS = {
         },
     }
 }
-
