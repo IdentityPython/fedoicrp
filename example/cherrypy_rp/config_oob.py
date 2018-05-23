@@ -62,9 +62,6 @@ client_config = {
     }
 }
 
-# default
-# SERVICE_FACTORY = 'oiccli.oic.requests.factory'
-
 # The keys in this dictionary are the OPs short user friendly name
 # not the issuer (iss) name.
 

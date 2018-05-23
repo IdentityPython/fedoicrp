@@ -48,7 +48,7 @@ setup(
     author="Roland Hedberg",
     author_email="roland@catalogix.se",
     license="Apache 2.0",
-    url='https://github.com/IdentityPython/fedoicmsg/',
+    url='https://github.com/IdentityPython/fedoidcmsg/',
     packages=["fedoidcrp", "fedoidcrp/oidc"],
     package_dir={"": "src"},
     classifiers=[
