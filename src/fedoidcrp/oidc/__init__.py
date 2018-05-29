@@ -13,5 +13,6 @@ class RP(oidc.RP):
                          httplib=httplib, services=services,
                          service_factory=service_factory)
 
-        fe = make_federation_entity(config['federation'], '', self.http)
+        fe = make_federation_entity(config['federation'], '', self.http,
+                                    verify_ssl=verify_ssl)
         self.service_context.federation_entity = fe
