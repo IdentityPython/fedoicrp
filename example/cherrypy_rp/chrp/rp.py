@@ -7,8 +7,8 @@ import sys
 
 import cherrypy
 
-from oidcmsg.key_jar import build_keyjar
-from oidcmsg.key_jar import KeyJar
+from cryptojwt.key_jar import build_keyjar
+from cryptojwt.key_jar import KeyJar
 
 from oidcrp import RPHandler
 
