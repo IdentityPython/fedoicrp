@@ -6,7 +6,7 @@ import sys
 
 import cherrypy
 
-from oidcmsg.key_jar import init_key_jar
+from cryptojwt.key_jar import init_key_jar
 
 from oidcrp import RPHandler
 
